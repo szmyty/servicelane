@@ -1,0 +1,191 @@
+x-labels: &labels
+  labels:
+    app.name: ${COMPOSE_PROJECT_NAME}
+
+x-healthcheck: &healthcheck
+  healthcheck:
+    test: [ "CMD-SHELL", "curl --fail http://localhost || exit 0" ]
+    interval: 5s
+    timeout: 30s
+    retries: 3
+    start_period: 0s
+
+x-defaults: &defaults
+  restart: unless-stopped
+  # Use Google's Public DNS servers. https://developers.google.com/speed/public-dns
+  dns:
+    - 8.8.8.8
+    - 8.8.4.4
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+  <<: *healthcheck
+  <<: *labels
+
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:19.0.1
+    hostname: keycloak
+    container_name: ${COMPOSE_PROJECT_NAME}-keycloak
+    command: "start-dev --import-realm"
+#    command: "start --import-realm --optimized --proxy edge --hostname-strict=false"
+    volumes:
+      - ./docker/keycloak/realms:/opt/keycloak/data/import
+      - ./docker/keycloak/themes/material:/opt/keycloak/themes/material
+    environment:
+      - KC_DB=dev-file
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
+      - KC_FEATURES=scripts
+      - KC_HTTP_PORT=9080
+      - KC_HTTPS_PORT=9443
+    ports:
+      - 9080:9080
+      - 9443:9443
+    networks:
+      network:
+        aliases:
+          - keycloak
+    <<: *defaults
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.4
+    hostname: elasticsearch
+    container_name: ${COMPOSE_PROJECT_NAME}-elasticsearch
+    ports:
+      - 9200:9200
+      - 9300:9300
+    environment:
+      - "xpack.security.enabled=false"
+      - "discovery.type=single-node"
+      - "bootstrap.memory_lock=true"
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    cap_add:
+      - IPC_LOCK
+    networks:
+      network:
+        aliases:
+          - elasticsearch
+    <<: *defaults
+
+  postgresql:
+    image: postgres:14.5
+    hostname: postgresql
+    container_name: ${COMPOSE_PROJECT_NAME}-postgresql
+    environment:
+      - POSTGRES_USER=app
+      - POSTGRES_PASSWORD=
+      - POSTGRES_HOST_AUTH_METHOD=trust
+    #    volumes:
+    #      - ./app/src/main/docker/app/database/postgresql:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    networks:
+      network:
+        aliases:
+          - postgresql
+    <<: *defaults
+
+  redis:
+    image: redis:6.2.7
+    hostname: redis
+    container_name: ${COMPOSE_PROJECT_NAME}-redis
+    ports:
+      - 6379:6379
+    networks:
+      network:
+        aliases:
+          - redis
+    <<: *defaults
+
+  sonarqube:
+    image: sonarqube:9.6.0-community
+    hostname: sonarqube
+    container_name: ${COMPOSE_PROJECT_NAME}-sonarqube
+    environment:
+      - sonar.forceAuthentication=false
+    ports:
+      - 9001:9000
+    networks:
+      network:
+        aliases:
+          - sonarqube
+    <<: *defaults
+
+  swagger-editor:
+    image: swaggerapi/swagger-editor:v4.6.1
+    hostname: swagger-editor
+    container_name: ${COMPOSE_PROJECT_NAME}-swagger-editor
+    ports:
+      - 7742:8080
+    networks:
+      network:
+        aliases:
+          - swagger-editor
+    <<: *defaults
+
+  zipkin:
+    image: openzipkin/zipkin:2.23
+    hostname: zipkin
+    container_name: ${COMPOSE_PROJECT_NAME}-zipkin
+    ports:
+      - 9411:9411
+    networks:
+      network:
+        aliases:
+          - zipkin
+    <<: *defaults
+
+  # pgAdmin: https://www.pgadmin.org/
+  pgadmin:
+    image: dpage/pgadmin4:6.20
+    hostname: pgadmin
+    container_name: ${COMPOSE_PROJECT_NAME}-pgadmin
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=aszmyt@bu.edu
+      - PGADMIN_DEFAULT_PASSWORD=password
+      - PGADMIN_LISTEN_PORT=5050
+    ports:
+      - 5050:5050
+    networks:
+      network:
+        aliases:
+          - pgadmin
+    <<: *defaults
+
+  # Portainer: https://www.portainer.io/
+  portainer:
+    image: portainer/portainer-ce:2.16.2
+    hostname: portainer
+    container_name: ${COMPOSE_PROJECT_NAME}-portainer
+    restart: unless-stopped
+    command: "-H unix:///var/run/docker.sock --admin-password ${PORTAINER_ADMIN_PASSWORD}"
+    ports:
+      - 9000:9000
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      network:
+        aliases:
+          - portainer
+    <<: *defaults
+
+# Project network.
+networks:
+  network:
+    name: ${COMPOSE_PROJECT_NAME}-network
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.16.0.0/16
+          gateway: 172.16.0.1
+    <<: *labels

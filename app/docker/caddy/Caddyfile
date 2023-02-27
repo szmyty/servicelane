@@ -1,0 +1,71 @@
+# Global options: https://caddyserver.com/docs/caddyfile/options
+{
+	# TLS Options: https://caddyserver.com/docs/caddyfile/options#tls-options
+	email aszmyt@bu.edu
+	acme_ca https://acme-v02.api.letsencrypt.org/directory
+	# acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
+}
+
+# TLS & DNS Configuration.
+(dns) {
+	tls {
+		dns duckdns {
+			api_token 32975662-e895-4f4c-9826-47646f1c5cb3
+		}
+	}
+}
+
+# Redirect www subdomain.
+www.servicelane.duckdns.org {
+	redir {scheme}://servicelane.duckdns.org{uri} permanent
+}
+
+https://servicelane.duckdns.org {
+	import dns
+
+	# Enable logging to the console.
+	log
+
+	encode zstd gzip
+	templates
+
+	route {
+		reverse_proxy http://localhost:8080
+	}
+}
+
+https://portainer.servicelane.duckdns.org {
+	import dns
+	route {
+		reverse_proxy http://localhost:9000
+	}
+}
+
+https://keycloak.servicelane.duckdns.org {
+	import dns
+	route {
+		reverse_proxy http://localhost:9080
+	}
+}
+
+https://pgadmin.servicelane.duckdns.org {
+	import dns
+	route {
+		reverse_proxy http://localhost:5050
+	}
+}
+
+https://sonarqube.servicelane.duckdns.org {
+	import dns
+	route {
+		#reverse_proxy http://host.docker.internal:9000
+		reverse_proxy http://localhost:9001
+	}
+}
+
+https://elasticsearch.servicelane.duckdns.org {
+	import dns
+	route {
+		reverse_proxy http://localhost:9200
+	}
+}

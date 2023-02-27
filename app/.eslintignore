@@ -1,0 +1,10 @@
+node_modules/
+docker/
+src/main/docker/
+jest.conf.js
+webpack/
+target/
+build/
+node/
+postcss.config.js
+.babelrc

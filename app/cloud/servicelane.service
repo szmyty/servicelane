@@ -1,0 +1,9 @@
+[Unit]
+Description=servicelane webserver Daemon
+
+[Service]
+ExecStart=/usr/bin/java -jar /web/server.jar
+User=user
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/CS633_Spring_2023_Project_Team_Four.iml" filepath="$PROJECT_DIR$/.idea/CS633_Spring_2023_Project_Team_Four.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app.main.iml" filepath="$PROJECT_DIR$/.idea/modules/app.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/edu.bu.met.cs633.app.main.iml" filepath="$PROJECT_DIR$/.idea/modules/edu.bu.met.cs633.app.main.iml" />
+    </modules>
+  </component>
+</project>
